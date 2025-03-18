@@ -29,10 +29,21 @@ ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "").split(",")
 
 DATABASES = {
     'default': {
-        'ENGINE': os.getenv("DATABASE_ENGINE"),
-        'NAME': BASE_DIR / os.getenv("DATABASE_NAME"),
+        'ENGINE': os.getenv("DATABASE_ENGINE_LOCAL"),
+        'NAME': BASE_DIR / os.getenv("DATABASE_NAME_LOCAL"),
     }
 }
+
+# DATABASES = {
+#     'default': {
+#         'ENGINE': os.getenv("DATABASE_ENGINE"),
+#         'NAME': os.getenv("DATABASE_NAME"),
+#         'USER': os.getenv("DATABASE_USER"),
+#         'PASSWORD': os.getenv("DATABASE_PASSWORD"),
+#         'HOST': os.getenv("DATABASE_HOST"),
+#         'PORT': os.getenv("DATABASE_PORT"),
+#     }
+# }
 
 INSTALLED_APPS = [
     'django.contrib.admin',

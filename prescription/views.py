@@ -134,14 +134,26 @@ def create(request):
     except Exception as e:
         return JsonResponse({"status": 500, "success": False, "message": str(e)}, status=500)
 
+@csrf_exempt
+def delete(request, prescription_id):
+    if request.method != "DELETE":
+        return JsonResponse({"status": 405, "success": False, "message": "Method Not Allowed"}, status=405)
+
+    try:
+        prescription = get_object_or_404(Prescription, id=prescription_id, deleted_at__isnull=True)
+        prescription.soft_delete()
+
+        return JsonResponse({
+            "status": 200,
+            "success": True,
+            "message": f"Prescription {prescription_id} deleted successfully"
+        })
+    
+    except Exception as e:
+        return JsonResponse({"status": 500, "success": False, "message": str(e)}, status=500)
+
 def process(request):
     return "process";
-
-def delete(request):
-    return "delete";
-
-def update(request):
-    return "update";
 
 def pays(request):
     return "pays";
