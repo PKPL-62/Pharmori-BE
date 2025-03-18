@@ -1,36 +1,34 @@
 import json
 from django.http import JsonResponse
-from django.shortcuts import get_object_or_404, render
+from django.shortcuts import get_object_or_404
 from django.views.decorators.csrf import csrf_exempt
 from medicine.models import Medicine
 from django.utils.timezone import now
+from django_ratelimit.decorators import ratelimit
 
+@ratelimit(key='ip', rate='5/m', method='GET', block=True)
 def viewall(request):
     medicines = Medicine.objects.filter(deleted_at__isnull=True)
-
     response_data = {
         "status": 200,
         "success": True,
         "message": "Successfully retrieved active medicines",
-        "data": {
-            "medicines": [
-                {
-                    "id": med.id,
-                    "name": med.name,
-                    "stock": med.stock,
-                    "price": med.price,
-                    "created_at": med.created_at,
-                }
-                for med in medicines
-            ]
-        },
+        "data": {"medicines": [
+            {
+                "id": med.id,
+                "name": med.name,
+                "stock": med.stock,
+                "price": med.price,
+                "created_at": med.created_at,
+            }
+            for med in medicines
+        ]},
     }
-
     return JsonResponse(response_data, status=200)
 
+@ratelimit(key='ip', rate='5/m', method='GET', block=True)
 def detail(request, medicine_id):
     medicine = get_object_or_404(Medicine, id=medicine_id, deleted_at__isnull=True)
-
     response_data = {
         "status": 200,
         "success": True,
@@ -43,14 +41,13 @@ def detail(request, medicine_id):
             "created_at": medicine.created_at,
         }
     }
-
     return JsonResponse(response_data, status=200)
 
 @csrf_exempt
+@ratelimit(key='ip', rate='3/m', method='POST', block=True)
 def create(request):
     if request.method != "POST":
         return JsonResponse({"status": 405, "success": False, "message": "Method Not Allowed"}, status=405)
-
     try:
         data = json.loads(request.body)
         name = data.get("name")
@@ -94,6 +91,7 @@ def create(request):
         return JsonResponse({"status": 500, "success": False, "message": str(e)}, status=500)
 
 @csrf_exempt
+@ratelimit(key='ip', rate='3/m', method='POST', block=True)
 def restock(request):
     if request.method == "POST":
         try:
@@ -130,9 +128,10 @@ def restock(request):
         except json.JSONDecodeError:
             return JsonResponse({"status": 400, "success": False, "message": "Invalid JSON format"}, status=400)
 
-    return JsonResponse({"status": 405, "success": False, "message": "Method not allowed"}, status=405) 
+    return JsonResponse({"status": 405, "success": False, "message": "Method not allowed"}, status=405)
 
 @csrf_exempt
+@ratelimit(key='ip', rate='3/m', method='POST', block=True)
 def delete(request, medicine_id):
     if request.method == "POST":
         try:
