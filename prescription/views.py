@@ -1,5 +1,6 @@
 from collections import defaultdict
 import json
+from django.utils import timezone
 import uuid
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, render
@@ -141,12 +142,33 @@ def delete(request, prescription_id):
 
     try:
         prescription = get_object_or_404(Prescription, id=prescription_id, deleted_at__isnull=True)
-        prescription.soft_delete()
+
+        if prescription.status == "FINISHED":
+            return JsonResponse({
+                "status": 400,
+                "success": False,
+                "message": f"Prescription {prescription_id} cannot be deleted as it is already finished."
+            }, status=400)
+
+        with transaction.atomic():
+            if prescription.status == "ON PROCESS":
+                medicine_quantities = MedicineQuantity.objects.filter(prescription=prescription)
+                
+                for mq in medicine_quantities:
+                    medicine = mq.medicine
+                    medicine.stock += mq.fulfilled_qty
+                    medicine.save()
+                    mq.fulfilled_qty = 0
+                    mq.save()
+
+            prescription.status = "CANCELLED"
+            prescription.deleted_at = timezone.now()
+            prescription.save()
 
         return JsonResponse({
             "status": 200,
             "success": True,
-            "message": f"Prescription {prescription_id} deleted successfully"
+            "message": f"Prescription {prescription_id} cancelled and deleted successfully."
         })
     
     except Exception as e:
