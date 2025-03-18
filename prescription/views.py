@@ -3,7 +3,7 @@ import json
 import uuid
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, render
-
+from django.db import transaction
 from django.views.decorators.csrf import csrf_exempt
 from medicine.models import Medicine
 from django.utils.timezone import now
@@ -152,8 +152,58 @@ def delete(request, prescription_id):
     except Exception as e:
         return JsonResponse({"status": 500, "success": False, "message": str(e)}, status=500)
 
-def process(request):
-    return "process";
+@csrf_exempt
+def process(request, prescription_id):
+    prescription = get_object_or_404(Prescription, id=prescription_id)
+
+    if prescription.status not in ["CREATED", "ON PROCESS"]:
+        return JsonResponse({
+            "status": "error",
+            "message": "Prescription cannot be processed in its current status.",
+            "data": None
+        }, status=400)
+
+    with transaction.atomic():
+        all_fulfilled = True 
+        medicine_quantities = MedicineQuantity.objects.filter(prescription=prescription)
+        medicine_data = []  
+        
+        for mq in medicine_quantities:
+            medicine = mq.medicine 
+            needed_qty = mq.needed_qty
+            fulfilled_qty = mq.fulfilled_qty
+            available_stock = medicine.stock
+
+            if fulfilled_qty < needed_qty:
+                qty_to_fulfill = min(needed_qty - fulfilled_qty, available_stock)
+                mq.fulfilled_qty += qty_to_fulfill
+                medicine.stock -= qty_to_fulfill 
+                mq.save()
+                medicine.save()
+
+            if mq.fulfilled_qty < mq.needed_qty:
+                all_fulfilled = False
+
+            medicine_data.append({
+                "medicine_id": medicine.id,
+                "name": medicine.name,
+                "needed_qty": needed_qty,
+                "fulfilled_qty": mq.fulfilled_qty,
+                "stock_remaining": medicine.stock
+            })
+
+        prescription.status = "FINISHED" if all_fulfilled else "ON PROCESS"
+        prescription.save()
+
+    return JsonResponse({
+        "status": "success",
+        "message": "Prescription processed successfully.",
+        "data": {
+            "prescription_id": prescription.id,
+            "status": prescription.status,
+            "medicines": medicine_data
+        }
+    })
 
 def pays(request):
     return "pays";
