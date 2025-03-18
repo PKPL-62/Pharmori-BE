@@ -31,7 +31,7 @@ def viewall(request):
             "total_price": prescription.total_price,
             "status": prescription.status,
             "created_at": prescription.created_at,
-            "patient_id": str(prescription.patient_id),  # UUID harus dikonversi ke string
+            "patient_id": str(prescription.patient_id),
             "medicines": list(medicines)
         })
 
@@ -53,7 +53,7 @@ def detail(request, prescription_id):
             "total_price": prescription.total_price,
             "status": prescription.status,
             "created_at": prescription.created_at,
-            "patient_id": str(prescription.patient_id),  # UUID harus diubah ke string
+            "patient_id": str(prescription.patient_id),
             "medicines": list(medicines)
         }
     }
@@ -73,7 +73,6 @@ def create(request):
         if not patient_id or not medicines_data:
             return JsonResponse({"status": 400, "success": False, "message": "Missing required fields"}, status=400)
 
-        # Generate Prescription ID
         latest_prescription = Prescription.objects.order_by("-id").first()
         if latest_prescription:
             last_number = int(latest_prescription.id.split("-")[1])
@@ -82,14 +81,12 @@ def create(request):
             new_number = 1
         prescription_id = f"PRES-{new_number:05d}"
 
-        # Buat Prescription baru
         prescription = Prescription.objects.create(
             id=prescription_id,
             patient_id=uuid.UUID(patient_id),
             created_at=now()
         )
 
-        # Gabungkan medicine quantities dengan defaultdict
         medicine_qty_map = defaultdict(int)
         for medicine_entry in medicines_data:
             medicine_id = medicine_entry.get("id")
@@ -98,17 +95,14 @@ def create(request):
             if not medicine_id or needed_qty <= 0:
                 return JsonResponse({"status": 400, "success": False, "message": "Invalid medicine data"}, status=400)
 
-            # Tambahkan jumlah jika id yang sama sudah ada
             medicine_qty_map[medicine_id] += needed_qty
 
         total_price = 0
         for medicine_id, total_needed_qty in medicine_qty_map.items():
-            # Cek apakah obat tersedia
             medicine = Medicine.objects.filter(id=medicine_id, deleted_at__isnull=True).first()
             if not medicine:
                 return JsonResponse({"status": 404, "success": False, "message": f"Medicine {medicine_id} not found"}, status=404)
 
-            # Tambah MedicineQuantity hanya satu kali per ID
             MedicineQuantity.objects.create(
                 prescription=prescription,
                 medicine=medicine,
@@ -116,10 +110,8 @@ def create(request):
                 fulfilled_qty=0
             )
 
-            # Hitung total harga
             total_price += medicine.price * total_needed_qty
 
-        # Simpan total harga Prescription
         prescription.total_price = total_price
         prescription.save()
 
