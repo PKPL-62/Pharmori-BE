@@ -31,7 +31,7 @@ jobs:
             echo "Deploying Django App to port $PORT"
 
             # Navigate to home directory
-            cd /home/${{ secrets.VPS_USER }}
+            cd /root
 
             # Clone or update the repository
             if [ ! -d "$APP_DIR" ]; then
@@ -43,7 +43,7 @@ jobs:
             fi
 
             # Navigate into the project folder
-            cd /home/${{ secrets.VPS_USER }}/$APP_DIR
+            cd /root/$APP_DIR
 
             # Create environment variables file from GitHub Secrets
             cat <<EOF > .env
