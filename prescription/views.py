@@ -2,7 +2,7 @@ from collections import defaultdict
 import json
 from django.utils import timezone
 import uuid
-from django.http import JsonResponse
+from django.http import Http404, JsonResponse
 from django.shortcuts import get_object_or_404
 from django.db import transaction
 from django.views.decorators.csrf import csrf_exempt
@@ -65,7 +65,7 @@ def detail(request, prescription_id):
 @ratelimit(key="ip", rate="3/m", method="POST", block=True)
 def create(request):
     if request.method != "POST":
-        return JsonResponse({"status": 405, "success": False, "message": "Method Not Allowed"}, status=405)
+        return JsonResponse({"status": 405, "success": False, "message": "Method not allowed"}, status=405)
 
     try:
         data = json.loads(request.body)
@@ -136,10 +136,13 @@ def create(request):
 @ratelimit(key="ip", rate="2/m", method="DELETE", block=True)
 def delete(request, prescription_id):
     if request.method != "DELETE":
-        return JsonResponse({"status": 405, "success": False, "message": "Method Not Allowed"}, status=405)
+        return JsonResponse({"status": 405, "success": False, "message": "Method not allowed"}, status=405)
 
     try:
-        prescription = get_object_or_404(Prescription, id=prescription_id, deleted_at__isnull=True)
+        try:
+            prescription = get_object_or_404(Prescription, id=prescription_id, deleted_at__isnull=True)
+        except Http404:
+            return JsonResponse({"status": 404, "success": False, "message": "Prescription not found"}, status=404)
 
         if prescription.status == "FINISHED":
             return JsonResponse({
@@ -167,6 +170,9 @@ def delete(request, prescription_id):
             "message": f"Prescription {prescription_id} cancelled and deleted successfully."
         })
     
+    except ValueError:
+        return JsonResponse({"status": 404, "success": False, "message": "Prescription not found"}, status=404)
+
     except Exception as e:
         return JsonResponse({"status": 500, "success": False, "message": str(e)}, status=500)
 
@@ -216,10 +222,3 @@ def process(request, prescription_id):
         "message": "Prescription processed successfully.",
         "data": {"prescription_id": prescription.id, "status": prescription.status, "medicines": medicine_data}
     })
-
-def ratelimit_exceeded_view(request, exception=None):
-    return JsonResponse({
-        "status": 429,
-        "success": False,
-        "message": "Too many requests. Please try again later."
-    }, status=429)

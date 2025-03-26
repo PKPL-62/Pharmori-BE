@@ -46,12 +46,9 @@ class RequestLoggingMiddleware:
         self.get_response = get_response
 
     def __call__(self, request):
-        print("Middleware executed")  # Debug print
-
         user = request.user if request.user.is_authenticated else "Anonymous"
         ip = self.get_client_ip(request)
         
-        # Read request body safely
         body = request.body.decode('utf-8') if request.body else "No Body"
 
         extra_info = {
@@ -68,7 +65,7 @@ class RequestLoggingMiddleware:
     def get_client_ip(self, request):
         x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
         if x_forwarded_for:
-            ip = x_forwarded_for.split(',')[0]  # Get the first IP in the list
+            ip = x_forwarded_for.split(',')[0]
         else:
             ip = request.META.get('REMOTE_ADDR', 'Unknown')
         return ip

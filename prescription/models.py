@@ -19,20 +19,6 @@ class Prescription(models.Model):
     patient_id = models.UUIDField(null=False, blank=False)
     medicines = models.ManyToManyField(Medicine, through="MedicineQuantity")
 
-    def soft_delete(self):
-        """Soft delete by setting deleted_at instead of actually deleting."""
-        self.deleted_at = timezone.now()
-        self.save()
-
-    def restore(self):
-        """Restore soft deleted record by setting deleted_at to None."""
-        self.deleted_at = None
-        self.save()
-
-    def is_deleted(self):
-        """Check if the record is soft deleted."""
-        return self.deleted_at is not None
-
     def save(self, *args, **kwargs):
         if not self.id:
             latest_prescription = Prescription.objects.order_by("-id").first()
@@ -50,7 +36,7 @@ class Prescription(models.Model):
         super().save(*args, **kwargs)
 
     def __str__(self):
-        return f"Prescription {self.id} (Deleted: {self.is_deleted()})"
+        return f"Prescription {self.id} (Deleted: {self.deleted_at is not None})"
 
     class Meta:
         indexes = [
@@ -82,7 +68,7 @@ class MedicineQuantity(models.Model):
         ]
 
     def __str__(self):
-        return f"{self.needed_qty} of {self.medicine.name} for {self.prescription.id}"
+        return f"{self.needed_qty} of {self.medicine.name} for Prescription {self.prescription.id} (Fulfilled: {self.fulfilled_qty})"
 
 
 class Payment(models.Model):
@@ -92,4 +78,4 @@ class Payment(models.Model):
     created_date = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f"Payment {self.id} for {self.prescription.id}"
+        return f"Payment {self.id} - Prescription {self.prescription.id} - Amount: {self.total_price}"

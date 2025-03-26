@@ -28,6 +28,12 @@ def viewall(request):
 
 @ratelimit(key='ip', rate='5/m', method='GET', block=True)
 def detail(request, medicine_id):
+    if not isinstance(medicine_id, str):
+        return JsonResponse({"status": 400, "success": False, "message": "Invalid medicine ID format"}, status=400)
+
+    if not medicine_id.startswith("MED-") or not medicine_id[4:].isdigit():
+        return JsonResponse({"status": 400, "success": False, "message": "Invalid medicine ID format"}, status=400)
+
     medicine = get_object_or_404(Medicine, id=medicine_id, deleted_at__isnull=True)
     response_data = {
         "status": 200,
@@ -54,11 +60,14 @@ def create(request):
         stock = data.get("stock")
         price = data.get("price")
 
+        if Medicine.objects.filter(name=name).exists():
+            return JsonResponse({"error": "Medicine name must be unique"}, status=400)
+
         if not name or stock is None or price is None:
             return JsonResponse({"status": 400, "success": False, "message": "Missing required fields"}, status=400)
 
-        if stock < 0 or price < 0:
-            return JsonResponse({"status": 400, "success": False, "message": "Stock and price must be >= 0"}, status=400)
+        if stock < 0 or price <= 0:
+            return JsonResponse({"status": 400, "success": False, "message": "Stock must be >= 0 and price must be > 0"}, status=400)
 
         last_medicine = Medicine.objects.order_by("-id").first()
         if last_medicine:
@@ -66,7 +75,7 @@ def create(request):
         else:
             last_id_number = 0
         
-        new_id = f"MED-{last_id_number + 1:05d}"
+        new_id = f"MED-{last_id_number + 1:04d}"
 
         medicine = Medicine.objects.create(id=new_id, name=name, stock=stock, price=price)
 
@@ -85,7 +94,7 @@ def create(request):
         return JsonResponse(response_data, status=201)
 
     except json.JSONDecodeError:
-        return JsonResponse({"status": 400, "success": False, "message": "Invalid JSON"}, status=400)
+        return JsonResponse({"status": 400, "success": False, "message": "Invalid JSON format"}, status=400)
 
     except Exception as e:
         return JsonResponse({"status": 500, "success": False, "message": str(e)}, status=500)
@@ -153,3 +162,4 @@ def delete(request, medicine_id):
             return JsonResponse({"status": 500, "success": False, "message": str(e)}, status=500)
 
     return JsonResponse({"status": 405, "success": False, "message": "Method not allowed"}, status=405)
+

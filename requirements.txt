@@ -4,3 +4,5 @@ psycopg2-binary
 django-ratelimit
 requests
 coverage
+pytest
+pytest-django

@@ -61,7 +61,7 @@ MIDDLEWARE = [
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
-    'django.contrib.auth.middleware.AuthenticationMiddleware',  # Move this up
+    'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'pharmori_be.middleware.JWTAuthenticationMiddleware',
     'pharmori_be.middleware.RequestLoggingMiddleware',
@@ -130,7 +130,7 @@ STATIC_URL = 'static/'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-RATELIMIT_VIEW = "prescription.views.ratelimit_exceeded_view"
+RATELIMIT_VIEW = "pharmori_be.utils.ratelimit_exceeded_view"
 
 # Set logging
 import sys
