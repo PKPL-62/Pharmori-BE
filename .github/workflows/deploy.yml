@@ -60,7 +60,7 @@ jobs:
             
             DATABASE_ENGINE=postgresql_psycopg2
             DATABASE_NAME=pharmori_db
-            DATABASE_USERNAME=postgres
+            DATABASE_USERNAME=sysadmin
             DATABASE_PASSWORD=${{ secrets.DATABASE_PASSWORD }}
             DATABASE_HOST=pharmori_db
             DATABASE_PORT=5432
