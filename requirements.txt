@@ -6,3 +6,4 @@ requests
 coverage
 pytest
 pytest-django
+gunicorn==23.0.0
