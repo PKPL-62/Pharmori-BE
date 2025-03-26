@@ -35,7 +35,7 @@ jobs:
 
             # Clone or update the repository
             if [ ! -d "$APP_DIR" ]; then
-              git clone --branch $BRANCH --depth=1 git@github.com:Six-Sigma-CS/pharmori_be.git $APP_DIR
+              git clone --branch $BRANCH --depth=1 git@github.com:PKPL-62/Pharmori-BE.git $APP_DIR
             else
               cd $APP_DIR
               git checkout $BRANCH
