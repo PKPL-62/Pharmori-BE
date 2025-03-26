@@ -12,7 +12,7 @@ def viewall(request):
     response_data = {
         "status": 200,
         "success": True,
-        "message": "Successfully retrieved active medicines",
+        "message": "Successfully retrievedz active medicines",
         "data": {"medicines": [
             {
                 "id": med.id,
