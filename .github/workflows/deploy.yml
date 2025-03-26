@@ -26,7 +26,7 @@ jobs:
             CONTAINER_IMAGE_NAME="$APP_DIR-$APP_ENV"
             BRANCH="main"
             PORT=8000
-            DOCKER_NETWORK="django_network"
+            DOCKER_NETWORK="pharmori_network"
 
             echo "Deploying Django App to port $PORT"
 
