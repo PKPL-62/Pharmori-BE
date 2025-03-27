@@ -7,12 +7,20 @@ from django.shortcuts import get_object_or_404
 from django.db import transaction
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.timezone import now
+from core.utils import validate_user_role
 from django_ratelimit.decorators import ratelimit
 from medicine.models import Medicine
-from prescription.models import MedicineQuantity, Prescription
+from prescription.models import MedicineQuantity, Payment, Prescription
+from django.core.exceptions import ObjectDoesNotExist
+
 
 @ratelimit(key="ip", rate="5/m", method="GET", block=True)
 def viewall(request):
+    allowed_roles = ["PHARMACIST", "DOCTOR", "PATIENT"]
+    user_data, user_role, error_response = validate_user_role(request, allowed_roles)
+    if error_response:
+        return error_response
+        
     prescriptions = Prescription.objects.filter(deleted_at__isnull=True)
 
     response_data = {
@@ -22,25 +30,56 @@ def viewall(request):
         "data": {"prescriptions": []}
     }
 
-    for prescription in prescriptions:
-        medicines = MedicineQuantity.objects.filter(prescription=prescription).values(
-            "medicine__id", "medicine__name", "needed_qty", "fulfilled_qty"
-        )
+    if user_role == "PATIENT":
+        for prescription in prescriptions:
+            if str(prescription.patient_id) == str(user_data["id"]):
+                medicines = MedicineQuantity.objects.filter(prescription=prescription).values(
+                    "medicine__id", "medicine__name", "needed_qty", "fulfilled_qty"
+                )
 
-        response_data["data"]["prescriptions"].append({
-            "id": prescription.id,
-            "total_price": prescription.total_price,
-            "status": prescription.status,
-            "created_at": prescription.created_at,
-            "patient_id": str(prescription.patient_id),
-            "medicines": list(medicines)
-        })
+                response_data["data"]["prescriptions"].append({
+                    "id": prescription.id,
+                    "total_price": prescription.total_price,
+                    "status": prescription.status,
+                    "created_at": prescription.created_at,
+                    "patient_id": str(prescription.patient_id),
+                    "medicines": list(medicines)
+                })
+    else :
+        for prescription in prescriptions:
+            medicines = MedicineQuantity.objects.filter(prescription=prescription).values(
+                "medicine__id", "medicine__name", "needed_qty", "fulfilled_qty"
+            )
+
+            response_data["data"]["prescriptions"].append({
+                "id": prescription.id,
+                "total_price": prescription.total_price,
+                "status": prescription.status,
+                "created_at": prescription.created_at,
+                "patient_id": str(prescription.patient_id),
+                "medicines": list(medicines)
+            })
 
     return JsonResponse(response_data)
 
 @ratelimit(key="ip", rate="5/m", method="GET", block=True)
 def detail(request, prescription_id):
-    prescription = get_object_or_404(Prescription, id=prescription_id, deleted_at__isnull=True)
+    allowed_roles = ["PHARMACIST", "DOCTOR", "PATIENT"]
+    user_data, user_role, error_response = validate_user_role(request, allowed_roles)
+    if error_response:
+        return error_response
+    
+    if not isinstance(prescription_id, str) or not prescription_id.startswith("PRES-") or not prescription_id[5:].isdigit():
+        return JsonResponse({"status": 400, "success": False, "message": "Invalid prescription ID format"}, status=400)
+
+    try:
+        prescription = Prescription.objects.get(id=prescription_id, deleted_at__isnull=True)
+    except ObjectDoesNotExist:
+        return JsonResponse({"status": 404, "success": False, "message": "Prescription not found"}, status=404)
+
+    if prescription.patient_id != user_data["id"] and user_role == "PATIENT":
+        return JsonResponse({"status": 404, "success": False, "message": "Prescription not found"}, status=404)
+    
     medicines = MedicineQuantity.objects.filter(prescription=prescription).values(
         "medicine__id", "medicine__name", "needed_qty", "fulfilled_qty"
     )
@@ -59,13 +98,18 @@ def detail(request, prescription_id):
         }
     }
 
-    return JsonResponse(response_data)
+    return JsonResponse(response_data, status=200)
 
 @csrf_exempt
 @ratelimit(key="ip", rate="3/m", method="POST", block=True)
 def create(request):
     if request.method != "POST":
         return JsonResponse({"status": 405, "success": False, "message": "Method not allowed"}, status=405)
+    
+    allowed_roles = ["DOCTOR"]
+    user_data, user_role, error_response = validate_user_role(request, allowed_roles)
+    if error_response:
+        return error_response
 
     try:
         data = json.loads(request.body)
@@ -137,6 +181,11 @@ def create(request):
 def delete(request, prescription_id):
     if request.method != "DELETE":
         return JsonResponse({"status": 405, "success": False, "message": "Method not allowed"}, status=405)
+    
+    allowed_roles = ["DOCTOR"]
+    user_data, user_role, error_response = validate_user_role(request, allowed_roles)
+    if error_response:
+        return error_response
 
     try:
         try:
@@ -144,7 +193,7 @@ def delete(request, prescription_id):
         except Http404:
             return JsonResponse({"status": 404, "success": False, "message": "Prescription not found"}, status=404)
 
-        if prescription.status == "FINISHED":
+        if prescription.status == "FINISHED" or prescription.status == "PAID":
             return JsonResponse({
                 "status": 400,
                 "success": False,
@@ -179,11 +228,23 @@ def delete(request, prescription_id):
 @csrf_exempt
 @ratelimit(key="ip", rate="3/m", method="POST", block=True)
 def process(request, prescription_id):
-    prescription = get_object_or_404(Prescription, id=prescription_id)
+    allowed_roles = ["PHARMACIST"]
+    user_data, user_role, error_response = validate_user_role(request, allowed_roles)
+    if error_response:
+        return error_response
+
+    if not isinstance(prescription_id, str) or not prescription_id.startswith("PRES-") or not prescription_id[5:].isdigit():
+        return JsonResponse({"status": 400, "success": False, "message": "Invalid prescription ID format"}, status=400)
+
+    try:
+        prescription = Prescription.objects.get(id=prescription_id)
+    except ObjectDoesNotExist:
+        return JsonResponse({"status": 404, "success": False, "message": "Prescription not found"}, status=404)
 
     if prescription.status not in ["CREATED", "ON PROCESS"]:
         return JsonResponse({
-            "status": "error",
+            "status": 400,
+            "success": False,
             "message": "Prescription cannot be processed in its current status.",
             "data": None
         }, status=400)
@@ -191,7 +252,7 @@ def process(request, prescription_id):
     with transaction.atomic():
         all_fulfilled = True
         medicine_data = []
-        
+
         for mq in MedicineQuantity.objects.filter(prescription=prescription):
             medicine = mq.medicine
             needed_qty = mq.needed_qty
@@ -218,7 +279,56 @@ def process(request, prescription_id):
         prescription.save()
 
     return JsonResponse({
-        "status": "success",
+        "status": 200,
+        "success": True,
         "message": "Prescription processed successfully.",
-        "data": {"prescription_id": prescription.id, "status": prescription.status, "medicines": medicine_data}
-    })
+        "data": {
+            "prescription_id": prescription.id,
+            "status": prescription.status,
+            "medicines": medicine_data
+        }
+    }, status=200)
+
+@csrf_exempt
+@ratelimit(key="ip", rate="3/m", method="POST", block=True)
+def pays(request, prescription_id):
+    if request.method != "POST":
+        return JsonResponse({"status": 405, "success": False, "message": "Method not allowed"}, status=405)
+    
+    allowed_roles = ["PATIENT"]
+    user_data, user_role, error_response = validate_user_role(request, allowed_roles)
+    if error_response:
+        return error_response
+    
+    if not isinstance(prescription_id, str) or not prescription_id.startswith("PRES-") or not prescription_id[5:].isdigit():
+        return JsonResponse({"status": 400, "success": False, "message": "Invalid prescription ID format"}, status=400)
+
+    try:
+        prescription = Prescription.objects.get(id=prescription_id)
+    except ObjectDoesNotExist:
+        return JsonResponse({"status": 404, "success": False, "message": "Prescription not found"}, status=404)
+    
+    if prescription.patient_id != user_data["id"]:
+        return JsonResponse({"status": 400, "success": False, "message": "Cannot pays prescription that not yours"}, status=400)
+
+    if prescription.status != "FINISHED":
+        return JsonResponse({"status": 400, "success": False, "message": "Cannot pays prescription that are not finished yet"}, status=400)
+
+    payment = Payment.objects.create(
+        prescription=prescription,
+        total_price=prescription.total_price,
+        user_id=uuid.UUID(user_data["id"])
+    )
+
+    payment.save()
+    prescription.status = "PAID"
+    prescription.save()
+
+    return JsonResponse({
+        "status": 200,
+        "success": True,
+        "message": "Prescription paid successfully.",
+        "data": {
+            "payment": payment
+        }
+    }, status=200)

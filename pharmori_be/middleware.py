@@ -1,8 +1,11 @@
+import json
 import logging
 import requests
 from django.utils.deprecation import MiddlewareMixin
 from django.http import JsonResponse
 from django.contrib.auth.models import AnonymousUser
+
+from core.utils import validate_user_role
 
 class JWTAuthenticationMiddleware(MiddlewareMixin):
     def process_request(self, request):
@@ -46,26 +49,32 @@ class RequestLoggingMiddleware:
         self.get_response = get_response
 
     def __call__(self, request):
-        user = request.user if request.user.is_authenticated else "Anonymous"
-        ip = self.get_client_ip(request)
+        # Debugging: Log Authorization header
+        auth_header = request.headers.get('Authorization')
+        logger.info(f"Authorization Header: {auth_header}")
+
+        user_data, _, _ = validate_user_role(request, allowed_roles=[])
         
+        # Debugging: Log user_data
+        logger.info(f"User Data: {user_data}")
+
+        user = user_data.get("email") if user_data else None
+        ip = self.get_client_ip(request)
         body = request.body.decode('utf-8') if request.body else "No Body"
 
         extra_info = {
-            'remote_addr': ip,
+            'remote_addr': ip or 'Unknown',
             'method': request.method,
             'path': request.get_full_path(),
         }
 
-        logger.info(f"User: {user}, Body: {body}", extra=extra_info)
+        logger.info(f"User: {user}, Body: {body}, Extra: {json.dumps(extra_info)}")
 
-        response = self.get_response(request)
-        return response
+        return self.get_response(request)
 
     def get_client_ip(self, request):
+        """Extract client IP address from request headers."""
         x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
         if x_forwarded_for:
-            ip = x_forwarded_for.split(',')[0]
-        else:
-            ip = request.META.get('REMOTE_ADDR', 'Unknown')
-        return ip
+            return x_forwarded_for.split(',')[0]
+        return request.META.get('REMOTE_ADDR', 'Unknown')
