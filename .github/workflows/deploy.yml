@@ -64,6 +64,8 @@ jobs:
             DATABASE_PASSWORD=${{ secrets.DATABASE_PASSWORD }}
             DATABASE_HOST=pharmori_db
             DATABASE_PORT=5432
+
+            AUTH_SERVICE_URL=http://202.10.42.233:3000
             EOF
 
             # Build and deploy the Docker container

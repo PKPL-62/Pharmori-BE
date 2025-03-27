@@ -25,8 +25,12 @@ SECRET_KEY = os.getenv("SECRET_KEY")
 # Jangan gunakan DEBUG=True di production
 DEBUG = os.getenv("DEBUG", "False") == "True"
 
+AUTH_SERVICE_URL = os.getenv("AUTH_SERVICE_URL")
+
 ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "").split(",")
 
+
+# Local
 # DATABASES = {
 #     'default': {
 #         'ENGINE': os.getenv("DATABASE_ENGINE_LOCAL"),
@@ -34,6 +38,8 @@ ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "").split(",")
 #     }
 # }
 
+
+# Deployment
 DATABASES = {
      'default': {
          'ENGINE': 'django.db.backends.{}'.format(
@@ -66,7 +72,8 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'medicine',
-    'prescription'
+    'prescription',
+    'core'
 ]
 
 MIDDLEWARE = [
@@ -159,8 +166,8 @@ LOGGING = {
     'disable_existing_loggers': False,
     'formatters': {
         'detailed': {
-            'format': '[{asctime}] {levelname} {remote_addr} {method} {path} - {message}',
-            'style': '{',
+            'format': '[%(asctime)s] %(levelname)s [%(name)s] %(message)s',
+            'datefmt': '%Y-%m-%d %H:%M:%S',
         },
     },
     'handlers': {
