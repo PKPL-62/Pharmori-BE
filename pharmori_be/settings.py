@@ -31,27 +31,27 @@ ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "").split(",")
 
 
 # Local
-DATABASES = {
-    'default': {
-        'ENGINE': os.getenv("DATABASE_ENGINE_LOCAL"),
-        'NAME': BASE_DIR / os.getenv("DATABASE_NAME_LOCAL"),
-    }
-}
+# DATABASES = {
+#     'default': {
+#         'ENGINE': os.getenv("DATABASE_ENGINE_LOCAL"),
+#         'NAME': BASE_DIR / os.getenv("DATABASE_NAME_LOCAL"),
+#     }
+# }
 
 
 # Deployment
-# DATABASES = {
-#      'default': {
-#          'ENGINE': 'django.db.backends.{}'.format(
-#              os.getenv('DATABASE_ENGINE', 'sqlite3')
-#          ),
-#          'NAME': os.getenv('DATABASE_NAME', 'polls'),
-#          'USER': os.getenv('DATABASE_USERNAME', 'myprojectuser'),
-#          'PASSWORD': os.getenv('DATABASE_PASSWORD', 'password'),
-#          'HOST': os.getenv('DATABASE_HOST', '127.0.0.1'),
-#          'PORT': os.getenv('DATABASE_PORT', 5432),
-#      }
-#  }
+DATABASES = {
+     'default': {
+         'ENGINE': 'django.db.backends.{}'.format(
+             os.getenv('DATABASE_ENGINE', 'sqlite3')
+         ),
+         'NAME': os.getenv('DATABASE_NAME', 'polls'),
+         'USER': os.getenv('DATABASE_USERNAME', 'myprojectuser'),
+         'PASSWORD': os.getenv('DATABASE_PASSWORD', 'password'),
+         'HOST': os.getenv('DATABASE_HOST', '127.0.0.1'),
+         'PORT': os.getenv('DATABASE_PORT', 5432),
+     }
+ }
 
 # DATABASES = {
 #     'default': {
