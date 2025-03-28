@@ -4,12 +4,20 @@ from django.http import HttpRequest
 from django.test import TestCase, Client
 from django.urls import reverse
 from django.utils.timezone import now
+from core.utils import get_test_token
 from medicine.models import Medicine
 import json
+import os
 
 from medicine.views import detail
 
 class MedicineViewsTest(TestCase):
+    # @classmethod
+    # def setUpTestData(cls):
+    #     cls.pharmacist_token = get_test_token("PHARMACIST")
+    #     cls.doctor_token = get_test_token("DOCTOR")
+    #     cls.patient_token = get_test_token("PATIENT")
+
     def setUp(self):
         """Set up test data"""
         self.client = Client()
@@ -20,10 +28,12 @@ class MedicineViewsTest(TestCase):
         self.medicine2 = Medicine.objects.create(
             id="MED-0002", name="Ibuprofen", stock=20, price=8000, deleted_at=now()
         )
+        
 
     def test_viewall_medicines(self):
-        """Test retrieving all active medicines"""
+        """Test retrieving all active medicines with authentication"""
         response = self.client.get(reverse("medicine:viewall"))
+        
         self.assertEqual(response.status_code, 200)
         self.assertTrue(response.json()["success"])
         self.assertEqual(len(response.json()["data"]["medicines"]), 1)
