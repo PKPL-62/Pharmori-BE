@@ -6,7 +6,8 @@ app_name = 'medicine'
 urlpatterns = [
     path('viewall', viewall, name='viewall'),
     path('create', create, name='create'),
-    path('detail/<str:medicine_id>', detail, name='detail'),
     path('restock', restock, name='restock'),
     path('delete/<str:medicine_id>', delete, name='delete'),
+    path("detail/<path:medicine_id>/", detail, name="detail"),
+    path("test", test, name="test"),
 ]

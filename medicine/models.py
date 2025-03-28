@@ -6,8 +6,8 @@ class Medicine(models.Model):
     stock = models.IntegerField(default=0)
     price = models.IntegerField(default=0)
     created_at = models.DateTimeField(auto_now_add=True)
-    deleted_at = models.DateTimeField(null=True, blank=True)  # ✅ Default NULL, tidak auto-update
-
+    deleted_at = models.DateTimeField(null=True, blank=True)
+    
     class Meta:
         constraints = [
             models.CheckConstraint(check=models.Q(stock__gte=0), name="stock_gte_0"),
@@ -15,14 +15,14 @@ class Medicine(models.Model):
         ]
 
     def save(self, *args, **kwargs):
-        if not self.id:  # Generate ID only if it's a new object
+        if not self.id:
             latest_medicine = Medicine.objects.order_by("-id").first()
             if latest_medicine:
                 last_number = int(latest_medicine.id.split("-")[1])
                 new_number = last_number + 1
             else:
                 new_number = 1
-            self.id = f"MED-{new_number:04d}"  # Format menjadi MED-XXXX
+            self.id = f"MED-{new_number:04d}"
         
         super().save(*args, **kwargs)
 

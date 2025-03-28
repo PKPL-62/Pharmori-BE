@@ -1,0 +1,85 @@
+name: Deploy Django App
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Deploy to VPS via SSH
+        uses: appleboy/ssh-action@v0.1.10
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          password: ${{ secrets.VPS_PASSWORD }}
+          script: |
+            # Define production variables
+            APP_ENV="main"
+            APP_DIR="pharmori_be"
+            CONTAINER_IMAGE_NAME="$APP_DIR-$APP_ENV"
+            BRANCH="main"
+            PORT=8000
+            DOCKER_NETWORK="pharmori_network"
+
+            echo "Deploying Django App to port $PORT"
+
+            # Navigate to home directory
+            cd /root
+
+            # Clone or update the repository
+            if [ ! -d "$APP_DIR" ]; then
+              git clone --branch $BRANCH --depth=1 git@github.com:PKPL-62/Pharmori-BE.git $APP_DIR
+            else
+              cd $APP_DIR
+              git checkout $BRANCH
+              git pull origin $BRANCH
+            fi
+
+            # Navigate into the project folder
+            cd /root/$APP_DIR
+
+            # Create environment variables file from GitHub Secrets
+            cat <<EOF > .env
+            SECRET_KEY=${{ secrets.SECRET_KEY }}
+            DEBUG=True
+            ALLOWED_HOSTS=*
+            
+            DATABASE_ENGINE_LOCAL=django.db.backends.sqlite3
+            DATABASE_NAME_LOCAL=db.sqlite3
+            
+            DJANGO_SECRET_KEY=${{ secrets.DJANGO_SECRET_KEY }}
+            DJANGO_LOGLEVEL=info
+            DJANGO_ALLOWED_HOSTS=localhost
+            
+            DATABASE_ENGINE=postgresql_psycopg2
+            DATABASE_NAME=pharmori_db
+            DATABASE_USERNAME=sysadmin
+            DATABASE_PASSWORD=${{ secrets.DATABASE_PASSWORD }}
+            DATABASE_HOST=pharmori_db
+            DATABASE_PORT=5432
+
+            AUTH_SERVICE_URL=${{ secrets.AUTH_SERVICE_URL }}
+
+            PHARMACIST_EMAIL=${{ secrets.PHARMACIST_EMAIL }}
+            PHARMACIST_PASSWORD=${{ secrets.PHARMACIST_PASSWORD }}
+
+            DOCTOR_EMAIL=${{ secrets.DOCTOR_EMAIL }}
+            DOCTOR_PASSWORD=${{ secrets.DOCTOR_PASSWORD }}
+
+            PATIENT_EMAIL=${{ secrets.PATIENT_EMAIL }}
+            PATIENT_PASSWORD=${{ secrets.PATIENT_PASSWORD }}
+            EOF
+
+            # Build and deploy the Docker container
+            docker stop $CONTAINER_IMAGE_NAME || true
+            docker rm $CONTAINER_IMAGE_NAME || true
+            docker rmi $CONTAINER_IMAGE_NAME:latest || true
+            docker buildx build -t $CONTAINER_IMAGE_NAME:latest .
+            docker run --network $DOCKER_NETWORK -d --name $CONTAINER_IMAGE_NAME --env-file .env -p $PORT:8000 $CONTAINER_IMAGE_NAME:latest

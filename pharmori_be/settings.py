@@ -14,6 +14,10 @@ from pathlib import Path
 import os
 from dotenv import load_dotenv
 
+import sys
+
+TESTING = "test" in sys.argv 
+
 # Load environment variables from .env file
 load_dotenv()
 
@@ -25,14 +29,44 @@ SECRET_KEY = os.getenv("SECRET_KEY")
 # Jangan gunakan DEBUG=True di production
 DEBUG = os.getenv("DEBUG", "False") == "True"
 
+AUTH_SERVICE_URL = os.getenv("AUTH_SERVICE_URL")
+
 ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "").split(",")
 
+
+# Local
 DATABASES = {
     'default': {
-        'ENGINE': os.getenv("DATABASE_ENGINE"),
-        'NAME': BASE_DIR / os.getenv("DATABASE_NAME"),
+        'ENGINE': os.getenv("DATABASE_ENGINE_LOCAL"),
+        'NAME': BASE_DIR / os.getenv("DATABASE_NAME_LOCAL"),
     }
 }
+
+
+# Deployment
+# DATABASES = {
+#      'default': {
+#          'ENGINE': 'django.db.backends.{}'.format(
+#              os.getenv('DATABASE_ENGINE', 'sqlite3')
+#          ),
+#          'NAME': os.getenv('DATABASE_NAME', 'polls'),
+#          'USER': os.getenv('DATABASE_USERNAME', 'myprojectuser'),
+#          'PASSWORD': os.getenv('DATABASE_PASSWORD', 'password'),
+#          'HOST': os.getenv('DATABASE_HOST', '127.0.0.1'),
+#          'PORT': os.getenv('DATABASE_PORT', 5432),
+#      }
+#  }
+
+# DATABASES = {
+#     'default': {
+#         'ENGINE': os.getenv("DATABASE_ENGINE"),
+#         'NAME': os.getenv("DATABASE_NAME"),
+#         'USER': os.getenv("DATABASE_USER"),
+#         'PASSWORD': os.getenv("DATABASE_PASSWORD"),
+#         'HOST': os.getenv("DATABASE_HOST"),
+#         'PORT': os.getenv("DATABASE_PORT"),
+#     }
+# }
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -42,7 +76,8 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'medicine',
-    'prescription'
+    'prescription',
+    'core'
 ]
 
 MIDDLEWARE = [
@@ -52,6 +87,9 @@ MIDDLEWARE = [
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
+    'pharmori_be.middleware.JWTAuthenticationMiddleware',
+    'pharmori_be.middleware.RequestLoggingMiddleware',
+    'django_ratelimit.middleware.RatelimitMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
@@ -115,3 +153,46 @@ STATIC_URL = 'static/'
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+RATELIMIT_VIEW = "pharmori_be.utils.ratelimit_exceeded_view"
+
+# Set logging
+import sys
+
+import logging
+
+if 'test' in sys.argv:
+    logging.disable(logging.CRITICAL)
+    RATELIMIT_ENABLE = False
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'detailed': {
+            'format': '[%(asctime)s] %(levelname)s [%(name)s] %(message)s',
+            'datefmt': '%Y-%m-%d %H:%M:%S',
+        },
+    },
+    'handlers': {
+        'file': {
+            'level': 'INFO',
+            'class': 'logging.FileHandler',
+            'filename': os.path.join(BASE_DIR, 'requests.log'),
+            'formatter': 'detailed',
+            'mode': 'a',  # Append mode
+        },
+        'console': {
+            'level': 'INFO',
+            'class': 'logging.StreamHandler',
+            'formatter': 'detailed',
+        },
+    },
+    'loggers': {
+        'django.request': {
+            'handlers': ['file', 'console'],
+            'level': 'INFO',
+            'propagate': True,
+        },
+    },
+}
