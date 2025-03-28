@@ -1,3 +1,9 @@
 Django==5.1.6
 python-dotenv
 psycopg2-binary
+django-ratelimit
+requests
+coverage
+pytest
+pytest-django
+gunicorn==23.0.0

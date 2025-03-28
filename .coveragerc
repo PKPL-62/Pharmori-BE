@@ -1,0 +1,10 @@
+[run]
+omit =
+    */migrations/*
+    */tests/*
+    */settings.py
+
+[report]
+exclude_lines =
+    if __name__ == .__main__.:
+    raise NotImplementedError

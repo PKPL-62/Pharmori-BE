@@ -124,3 +124,8 @@ dmypy.json
 media/
 assets/
 "media/" 
+
+# Coverage.py reports
+.coverage
+htmlcov/
+.coverage.*
