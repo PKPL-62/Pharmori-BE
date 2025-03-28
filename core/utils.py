@@ -36,7 +36,7 @@ def validate_user_role(request, allowed_roles):
         response = requests.get(AUTH_VALIDATION_URL, headers={"Authorization": f"Bearer {token}"}, timeout=5)
 
         logger.info(f"AUTH service response status: {response.status_code}")
-        logger.info(f"AUTH service raw response: {response.text}")  # Log full response
+        logger.info(f"AUTH service raw response: {response.text}") 
         
         if response.status_code != 200:
             return None, None, JsonResponse({"status": 401, "success": False, "message": "Unauthorized: Invalid token"}, status=401)
@@ -75,6 +75,6 @@ def get_test_token(role):
 
     if response.status_code == 200:
         data = response.json()["data"]
-        return data.get("token", {}).get("token")
+        return data.get("token")
     
     return None
