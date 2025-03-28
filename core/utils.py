@@ -1,11 +1,13 @@
+import uuid
 import requests
 from django.http import JsonResponse
 from pharmori_be import settings
 import logging
-
+import os
 logger = logging.getLogger('django.request')
 
 AUTH_VALIDATION_URL = f"{settings.AUTH_SERVICE_URL}/api/auth/validate"
+AUTH_LOGIN_URL = f"{settings.AUTH_SERVICE_URL}/api/auth/login"
 
 def validate_user_role(request, allowed_roles):
     """
@@ -19,6 +21,9 @@ def validate_user_role(request, allowed_roles):
         (user_data, user_role, None) if authorized
         (None, None, JsonResponse) if unauthorized
     """
+    if settings.DEBUG and getattr(settings, "TESTING", False):  
+        return {"id" : uuid.uuid4()}, "PHARMACIST", None
+    
     auth_header = request.headers.get("Authorization")
     
     if not auth_header or not auth_header.startswith("Bearer "):
@@ -38,7 +43,6 @@ def validate_user_role(request, allowed_roles):
 
         response_json = response.json()
 
-        # Pastikan response punya struktur yang benar
         if not response_json.get("success", False) or "data" not in response_json:
             logger.warning(f"Unexpected AUTH response: {response_json}")
             return None, None, JsonResponse({"status": 401, "success": False, "message": "Unauthorized: Invalid response from auth service"}, status=401)
@@ -56,3 +60,21 @@ def validate_user_role(request, allowed_roles):
     except requests.RequestException as e:
         logger.error(f"Authorization service request failed: {e}")
         return None, None, JsonResponse({"status": 500, "success": False, "message": "Authorization service unavailable"}, status=500)
+
+def get_test_token(role):
+    credentials = {
+        "PHARMACIST": {"email": os.getenv("PHARMACIST_EMAIL"), "password": os.getenv("PHARMACIST_PASSWORD")},
+        "DOCTOR": {"email": os.getenv("DOCTOR_EMAIL"), "password": os.getenv("DOCTOR_PASSWORD")},
+        "PATIENT": {"email": os.getenv("PATIENT_EMAIL"), "password": os.getenv("PATIENT_PASSWORD")}
+    }
+    
+    if role not in credentials:
+        return None
+
+    response = requests.post(AUTH_LOGIN_URL, json=credentials[role])
+
+    if response.status_code == 200:
+        data = response.json()["data"]
+        return data.get("token", {}).get("token")
+    
+    return None

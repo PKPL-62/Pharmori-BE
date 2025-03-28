@@ -77,7 +77,7 @@ class Payment(models.Model):
     prescription = models.ForeignKey(Prescription, on_delete=models.CASCADE)
     total_price = models.IntegerField()
     created_date = models.DateTimeField(auto_now_add=True)
-    user_id = models.UUIDField(null=False, blank=False)
+    user_id = models.UUIDField(null=False, blank=False, default=uuid.uuid4)
 
     def __str__(self):
         return f"Payment {self.id} - Prescription {self.prescription.id} - Amount: {self.total_price}"

@@ -2,12 +2,22 @@ import json
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404
 from django.views.decorators.csrf import csrf_exempt
-from core.utils import validate_user_role
+from core.utils import get_test_token, validate_user_role
 from medicine.models import Medicine
 from django.utils.timezone import now
 from django_ratelimit.decorators import ratelimit
 from django.core.exceptions import ObjectDoesNotExist
 
+def test(request):
+    response_data = {
+        "status": 200,
+        "success": True,
+        "message": "Successfully retrieved medicine details",
+        "data": {
+            "id": get_test_token("DOCTOR")
+        }
+    }
+    return JsonResponse(response_data, status=200)
 
 @ratelimit(key='ip', rate='5/m', method='GET', block=True)
 def viewall(request):

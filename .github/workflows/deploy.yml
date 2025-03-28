@@ -65,7 +65,16 @@ jobs:
             DATABASE_HOST=pharmori_db
             DATABASE_PORT=5432
 
-            AUTH_SERVICE_URL=http://202.10.42.233:3000
+            AUTH_SERVICE_URL=${{ secrets.AUTH_SERVICE_URL }}
+
+            PHARMACIST_EMAIL=${{ secrets.PHARMACIST_EMAIL }}
+            PHARMACIST_PASSWORD=${{ secrets.PHARMACIST_PASSWORD }}
+
+            DOCTOR_EMAIL=${{ secrets.DOCTOR_EMAIL }}
+            DOCTOR_PASSWORD=${{ secrets.DOCTOR_PASSWORD }}
+
+            PATIENT_EMAIL=${{ secrets.PATIENT_EMAIL }}
+            PATIENT_PASSWORD=${{ secrets.PATIENT_PASSWORD }}
             EOF
 
             # Build and deploy the Docker container

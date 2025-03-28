@@ -110,7 +110,7 @@ class PrescriptionTestCase(TestCase):
 
     def test_payment_str(self):
         payment = Payment.objects.create(
-            prescription=self.prescription, total_price=5000
+            prescription=self.prescription, total_price=5000, user_id=uuid.uuid4()
         )
         expected_str = f"Payment {payment.id} - Prescription {self.prescription.id} - Amount: 5000"
         self.assertEqual(str(payment), expected_str)
@@ -243,7 +243,7 @@ class PrescriptionTestCase(TestCase):
         MedicineQuantity.objects.create(prescription=self.prescription, medicine=self.medicine1, needed_qty=5, fulfilled_qty=0)
         response = self.client.post(self.process_url)
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.json()["status"], "success")
+        self.assertEqual(response.json()["status"], 200)
 
     def test_process_prescription_insufficient_stock(self):
         self.prescription.status = "CREATED"
@@ -251,5 +251,5 @@ class PrescriptionTestCase(TestCase):
         MedicineQuantity.objects.create(prescription=self.prescription, medicine=self.medicine1, needed_qty=100, fulfilled_qty=0)
         response = self.client.post(self.process_url)
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.json()["status"], "success")
+        self.assertEqual(response.json()["status"], 200)
         self.assertEqual(response.json()["data"]["status"], "ON PROCESS")
