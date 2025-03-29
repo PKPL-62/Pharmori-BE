@@ -19,7 +19,7 @@ def test(request):
     }
     return JsonResponse(response_data, status=200)
 
-@ratelimit(key='ip', rate='5/m', method='GET', block=True)
+# @ratelimit(key='ip', rate='5/m', method='GET', block=True)
 def viewall(request):
     allowed_roles = ["PHARMACIST", "DOCTOR"]
     user_data, user_role, error_response = validate_user_role(request, allowed_roles)
@@ -44,7 +44,7 @@ def viewall(request):
     }
     return JsonResponse(response_data, status=200)
 
-@ratelimit(key='ip', rate='5/m', method='GET', block=True)
+# @ratelimit(key='ip', rate='5/m', method='GET', block=True)
 def detail(request, medicine_id):
     allowed_roles = ["PHARMACIST", "DOCTOR"]
     user_data, user_role, error_response = validate_user_role(request, allowed_roles)
@@ -76,8 +76,8 @@ def detail(request, medicine_id):
     }
     return JsonResponse(response_data, status=200)
 
+# @ratelimit(key='ip', rate='3/m', method='POST', block=True)
 @csrf_exempt
-@ratelimit(key='ip', rate='3/m', method='POST', block=True)
 def create(request):
     if request.method != "POST":
         return JsonResponse({"status": 405, "success": False, "message": "Method Not Allowed"}, status=405)
@@ -132,8 +132,8 @@ def create(request):
     except Exception as e:
         return JsonResponse({"status": 500, "success": False, "message": str(e)}, status=500)
 
+# @ratelimit(key='ip', rate='3/m', method='POST', block=True)
 @csrf_exempt
-@ratelimit(key='ip', rate='3/m', method='POST', block=True)
 def restock(request):
     if request.method == "POST":
 
@@ -178,8 +178,8 @@ def restock(request):
 
     return JsonResponse({"status": 405, "success": False, "message": "Method not allowed"}, status=405)
 
+# @ratelimit(key='ip', rate='3/m', method='POST', block=True)
 @csrf_exempt
-@ratelimit(key='ip', rate='3/m', method='POST', block=True)
 def delete(request, medicine_id):
     if request.method == "POST":
         allowed_roles = ["PHARMACIST", "DOCTOR"]

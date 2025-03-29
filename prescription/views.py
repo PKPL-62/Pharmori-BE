@@ -14,7 +14,7 @@ from prescription.models import MedicineQuantity, Payment, Prescription
 from django.core.exceptions import ObjectDoesNotExist
 
 
-@ratelimit(key="ip", rate="5/m", method="GET", block=True)
+# @ratelimit(key="ip", rate="5/m", method="GET", block=True)
 def viewall(request):
     allowed_roles = ["PHARMACIST", "DOCTOR", "PATIENT"]
     user_data, user_role, error_response = validate_user_role(request, allowed_roles)
@@ -62,7 +62,7 @@ def viewall(request):
 
     return JsonResponse(response_data)
 
-@ratelimit(key="ip", rate="5/m", method="GET", block=True)
+# @ratelimit(key="ip", rate="5/m", method="GET", block=True)
 def detail(request, prescription_id):
     allowed_roles = ["PHARMACIST", "DOCTOR", "PATIENT"]
     user_data, user_role, error_response = validate_user_role(request, allowed_roles)
@@ -100,8 +100,8 @@ def detail(request, prescription_id):
 
     return JsonResponse(response_data, status=200)
 
+# @ratelimit(key="ip", rate="3/m", method="POST", block=True)
 @csrf_exempt
-@ratelimit(key="ip", rate="3/m", method="POST", block=True)
 def create(request):
     if request.method != "POST":
         return JsonResponse({"status": 405, "success": False, "message": "Method not allowed"}, status=405)
@@ -176,8 +176,8 @@ def create(request):
     except Exception as e:
         return JsonResponse({"status": 500, "success": False, "message": str(e)}, status=500)
 
+# @ratelimit(key="ip", rate="2/m", method="DELETE", block=True)
 @csrf_exempt
-@ratelimit(key="ip", rate="2/m", method="DELETE", block=True)
 def delete(request, prescription_id):
     if request.method != "DELETE":
         return JsonResponse({"status": 405, "success": False, "message": "Method not allowed"}, status=405)
@@ -225,8 +225,8 @@ def delete(request, prescription_id):
     except Exception as e:
         return JsonResponse({"status": 500, "success": False, "message": str(e)}, status=500)
 
+# @ratelimit(key="ip", rate="3/m", method="POST", block=True)
 @csrf_exempt
-@ratelimit(key="ip", rate="3/m", method="POST", block=True)
 def process(request, prescription_id):
     allowed_roles = ["PHARMACIST"]
     user_data, user_role, error_response = validate_user_role(request, allowed_roles)
@@ -289,8 +289,8 @@ def process(request, prescription_id):
         }
     }, status=200)
 
+# @ratelimit(key="ip", rate="3/m", method="POST", block=True)
 @csrf_exempt
-@ratelimit(key="ip", rate="3/m", method="POST", block=True)
 def pays(request, prescription_id):
     if request.method != "POST":
         return JsonResponse({"status": 405, "success": False, "message": "Method not allowed"}, status=405)
