@@ -332,3 +332,74 @@ def pays(request, prescription_id):
             "payment": payment
         }
     }, status=200)
+
+# @ratelimit(key="ip", rate="3/m", method="POST", block=True)
+@csrf_exempt
+def update(request, prescription_id):
+    if request.method != "POST":
+        return JsonResponse({"status": 405, "success": False, "message": "Method not allowed"}, status=405)
+    
+    allowed_roles = ["DOCTOR"]
+    user_data, user_role, error_response = validate_user_role(request, allowed_roles)
+    if error_response:
+        return error_response
+
+    try:
+        data = json.loads(request.body)
+        patient_id = data.get("patientId")
+        medicines_data = data.get("medicines", [])
+
+        try:
+            prescription = Prescription.objects.get(id=prescription_id, patient_id=patient_id)
+        except ObjectDoesNotExist:
+            return JsonResponse({"status": 404, "success": False, "message": "Prescription not found"}, status=404)
+
+        if prescription.status != "CREATED":
+            return JsonResponse({"status": 404, "success": False, "message": "Invalid prescription status to update"}, status=404)
+
+        medicine_qty_map = defaultdict(int)
+        for medicine_entry in medicines_data:
+            medicine_id = medicine_entry.get("id")
+            needed_qty = medicine_entry.get("needed_qty", 0)
+
+            if not medicine_id or needed_qty <= 0:
+                return JsonResponse({"status": 400, "success": False, "message": "Invalid medicine data"}, status=400)
+
+            medicine_qty_map[medicine_id] += needed_qty
+
+        total_price = 0
+        for medicine_id, total_needed_qty in medicine_qty_map.items():
+            medicine = Medicine.objects.filter(id=medicine_id, deleted_at__isnull=True).first()
+            if not medicine:
+                return JsonResponse({"status": 404, "success": False, "message": f"Medicine {medicine_id} not found"}, status=404)
+
+            MedicineQuantity.objects.create(
+                prescription=prescription,
+                medicine=medicine,
+                needed_qty=total_needed_qty,
+                fulfilled_qty=0
+            )
+
+            total_price += medicine.price * total_needed_qty
+
+        prescription.total_price = total_price
+        prescription.save()
+
+        return JsonResponse({
+            "status": 201,
+            "success": True,
+            "message": "Prescription created successfully",
+            "data": {
+                "id": prescription.id,
+                "patient_id": str(prescription.patient_id),
+                "total_price": prescription.total_price,
+                "status": prescription.status,
+                "created_at": prescription.created_at.isoformat()
+            }
+        }, status=201)
+
+    except json.JSONDecodeError:
+        return JsonResponse({"status": 400, "success": False, "message": "Invalid JSON format"}, status=400)
+
+    except Exception as e:
+        return JsonResponse({"status": 500, "success": False, "message": str(e)}, status=500)

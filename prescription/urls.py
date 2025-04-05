@@ -9,4 +9,5 @@ urlpatterns = [
     path('detail/<str:prescription_id>', detail, name='detail'),
     path('delete/<str:prescription_id>', delete, name='delete'),
     path('process/<str:prescription_id>', process, name='process'),
+    path('update/<str:prescription_id>', update, name='update'),
 ]
