@@ -8,17 +8,6 @@ from django.utils.timezone import now
 from django_ratelimit.decorators import ratelimit
 from django.core.exceptions import ObjectDoesNotExist
 
-def test(request):
-    response_data = {
-        "status": 200,
-        "success": True,
-        "message": "Successfully retrieved medicine details",
-        "data": {
-            "id": get_test_token("DOCTOR")
-        }
-    }
-    return JsonResponse(response_data, status=200)
-
 # @ratelimit(key='ip', rate='5/m', method='GET', block=True)
 def viewall(request):
     allowed_roles = ["PHARMACIST", "DOCTOR"]
