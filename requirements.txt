@@ -1,4 +1,4 @@
-Django==5.1.6
+django
 python-dotenv
 psycopg2-binary
 django-ratelimit
@@ -7,3 +7,5 @@ coverage
 pytest
 pytest-django
 gunicorn==23.0.0
+pip-audit
+safety
