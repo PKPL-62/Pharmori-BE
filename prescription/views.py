@@ -14,9 +14,11 @@ from medicine.models import Medicine
 from pharmori_be import settings
 from prescription.models import MedicineQuantity, Payment, Prescription
 from django.core.exceptions import ObjectDoesNotExist
+import logging
 
+logger = logging.getLogger('django.request')
 
-# @ratelimit(key="ip", rate="5/m", method="GET", block=True)
+@ratelimit(key="ip", rate="5/m", method="GET", block=True)
 def viewall(request):
     allowed_roles = ["PHARMACIST", "DOCTOR", "PATIENT"]
     user_data, user_role, error_response = validate_user_role(request, allowed_roles)
@@ -64,7 +66,7 @@ def viewall(request):
 
     return JsonResponse(response_data)
 
-# @ratelimit(key="ip", rate="5/m", method="GET", block=True)
+@ratelimit(key="ip", rate="5/m", method="GET", block=True)
 def detail(request, prescription_id):
     allowed_roles = ["PHARMACIST", "DOCTOR", "PATIENT"]
     user_data, user_role, error_response = validate_user_role(request, allowed_roles)
@@ -103,7 +105,7 @@ def detail(request, prescription_id):
 
     return JsonResponse(response_data, status=200)
 
-# @ratelimit(key="ip", rate="3/m", method="POST", block=True)
+@ratelimit(key="ip", rate="3/m", method="POST", block=True)
 @csrf_exempt
 def create(request):
     if request.method != "POST":
@@ -179,7 +181,7 @@ def create(request):
     except Exception as e:
         return JsonResponse({"status": 500, "success": False, "message": str(e)}, status=500)
 
-# @ratelimit(key="ip", rate="2/m", method="DELETE", block=True)
+@ratelimit(key="ip", rate="2/m", method="DELETE", block=True)
 @csrf_exempt
 def delete(request, prescription_id):
     if request.method != "DELETE":
@@ -228,7 +230,7 @@ def delete(request, prescription_id):
     except Exception as e:
         return JsonResponse({"status": 500, "success": False, "message": str(e)}, status=500)
 
-# @ratelimit(key="ip", rate="3/m", method="POST", block=True)
+@ratelimit(key="ip", rate="3/m", method="POST", block=True)
 @csrf_exempt
 def process(request, prescription_id):
     allowed_roles = ["PHARMACIST"]
@@ -292,7 +294,7 @@ def process(request, prescription_id):
         }
     }, status=200)
 
-# @ratelimit(key="ip", rate="3/m", method="POST", block=True)
+@ratelimit(key="ip", rate="3/m", method="POST", block=True)
 @csrf_exempt
 def pays(request, prescription_id):
     if request.method != "POST":
@@ -308,6 +310,7 @@ def pays(request, prescription_id):
         return JsonResponse({"status": 401, "success": False, "message": "Authorization token missing or invalid"}, status=401)
     
     token = auth_header.split(" ")[1]
+    logger.info(f"User {user_data['id']} requested to pay prescription {prescription_id}")
 
     get_balance_url = f"{settings.AUTH_SERVICE_URL}/api/balances"
     withdraw_url = f"{settings.AUTH_SERVICE_URL}/api/balances/withdraw"
@@ -346,8 +349,10 @@ def pays(request, prescription_id):
             headers={"Authorization": f"Bearer {token}"}
         )
         if withdraw_response.status_code != 200:
+            logger.warning(f"Failed withdrawal attempt for prescription {prescription_id}")
             return JsonResponse({"status": 400, "success": False, "message": "Withdrawal failed", "details": withdraw_response.json()}, status=400)
     except Exception as e:
+        logger.warning(f"Failed withdrawal attempt for prescription {prescription_id}")
         return JsonResponse({"status": 500, "success": False, "message": "Error during withdrawal", "details": str(e)}, status=500)
 
     payment = Payment.objects.create(
@@ -359,7 +364,7 @@ def pays(request, prescription_id):
     payment.save()
     prescription.status = "PAID"
     prescription.save()
-
+    logger.info(f"User {user_data['id']} success to pay prescription {prescription_id}")
     return JsonResponse({
         "status": 200,
         "success": True,
@@ -369,7 +374,7 @@ def pays(request, prescription_id):
         }
     }, status=200)
 
-# @ratelimit(key="ip", rate="3/m", method="POST", block=True)
+@ratelimit(key="ip", rate="3/m", method="POST", block=True)
 @csrf_exempt
 def update(request, prescription_id):
     if request.method != "POST":
