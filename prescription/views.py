@@ -77,8 +77,9 @@ def detail(request, prescription_id):
     except ObjectDoesNotExist:
         return JsonResponse({"status": 404, "success": False, "message": "Prescription not found"}, status=404)
 
-    if prescription.patient_id != user_data["id"] and user_role == "PATIENT":
-        return JsonResponse({"status": 404, "success": False, "message": "Prescription not found"}, status=404)
+    if user_role == "PATIENT":
+        if str(prescription.patient_id) != str(user_data["id"]):
+            return JsonResponse({"status": 404, "success": False, "message": "Prescription not found"}, status=404)
     
     medicines = MedicineQuantity.objects.filter(prescription=prescription).values(
         "medicine__id", "medicine__name", "needed_qty", "fulfilled_qty"
@@ -308,7 +309,7 @@ def pays(request, prescription_id):
     except ObjectDoesNotExist:
         return JsonResponse({"status": 404, "success": False, "message": "Prescription not found"}, status=404)
     
-    if prescription.patient_id != user_data["id"]:
+    if str(prescription.patient_id) != str(user_data["id"]):
         return JsonResponse({"status": 400, "success": False, "message": "Cannot pays prescription that not yours"}, status=400)
 
     if prescription.status != "FINISHED":
@@ -338,7 +339,7 @@ def pays(request, prescription_id):
 def update(request, prescription_id):
     if request.method != "POST":
         return JsonResponse({"status": 405, "success": False, "message": "Method not allowed"}, status=405)
-    
+
     allowed_roles = ["DOCTOR"]
     user_data, user_role, error_response = validate_user_role(request, allowed_roles)
     if error_response:
@@ -355,7 +356,9 @@ def update(request, prescription_id):
             return JsonResponse({"status": 404, "success": False, "message": "Prescription not found"}, status=404)
 
         if prescription.status != "CREATED":
-            return JsonResponse({"status": 404, "success": False, "message": "Invalid prescription status to update"}, status=404)
+            return JsonResponse({"status": 400, "success": False, "message": "Invalid prescription status to update"}, status=400)
+
+        MedicineQuantity.objects.filter(prescription=prescription).delete()
 
         medicine_qty_map = defaultdict(int)
         for medicine_entry in medicines_data:
@@ -386,9 +389,9 @@ def update(request, prescription_id):
         prescription.save()
 
         return JsonResponse({
-            "status": 201,
+            "status": 200,
             "success": True,
-            "message": "Prescription created successfully",
+            "message": "Prescription updated successfully",
             "data": {
                 "id": prescription.id,
                 "patient_id": str(prescription.patient_id),
@@ -396,7 +399,7 @@ def update(request, prescription_id):
                 "status": prescription.status,
                 "created_at": prescription.created_at.isoformat()
             }
-        }, status=201)
+        }, status=200)
 
     except json.JSONDecodeError:
         return JsonResponse({"status": 400, "success": False, "message": "Invalid JSON format"}, status=400)

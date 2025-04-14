@@ -10,19 +10,9 @@ AUTH_VALIDATION_URL = f"{settings.AUTH_SERVICE_URL}/api/auth/validate"
 AUTH_LOGIN_URL = f"{settings.AUTH_SERVICE_URL}/api/auth/login"
 
 def validate_user_role(request, allowed_roles):
-    """
-    Validate user authorization and return user role.
-
-    Parameters:
-        request: Django HTTP request object.
-        allowed_roles: List of allowed roles.
-
-    Returns:
-        (user_data, user_role, None) if authorized
-        (None, None, JsonResponse) if unauthorized
-    """
+    
     if settings.DEBUG and getattr(settings, "TESTING", False):  
-        return {"id" : uuid.uuid4()}, "PHARMACIST", None
+        return {"id" : "11111111-1111-1111-1111-111111111111"}, "PHARMACIST", None
     
     auth_header = request.headers.get("Authorization")
     
