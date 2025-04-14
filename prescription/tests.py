@@ -9,13 +9,15 @@ from prescription.models import MedicineQuantity, Payment, Prescription
 
 class PrescriptionTestCase(TestCase):
     def setUp(self):
-        self.patient_id = uuid.uuid4()
+        self.patient_id = "11111111-1111-1111-1111-111111111111"
         self.medicine1 = Medicine.objects.create(id="MED-0001", name="Paracetamol", price=1000, stock=50)
         self.medicine2 = Medicine.objects.create(id="MED-0002", name="Ibuprofen", price=1500, stock=30)
         self.prescription = Prescription.objects.create(patient_id=self.patient_id, created_at=timezone.now())
         self.create_url = "/prescription/create"
         self.delete_url = f"/prescription/delete/{self.prescription.id}"
         self.process_url = f"/prescription/process/{self.prescription.id}"
+        self.pay_url = f"/prescription/pays/{self.prescription.id}"
+        self.update_url = f"/prescription/update/{self.prescription.id}"
 
     def test_create_prescription(self):
         prescription = Prescription.objects.create(patient_id=self.patient_id, created_at=timezone.now())
@@ -253,3 +255,147 @@ class PrescriptionTestCase(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json()["status"], 200)
         self.assertEqual(response.json()["data"]["status"], "ON PROCESS")
+
+    # def test_update_prescription_invalid_status(self):
+    #     self.prescription.status = "FINISHED"
+    #     self.prescription.save()
+
+    #     session = self.client.session
+    #     session["user_data"] = {"id": "doctor-id"}
+    #     session["user_role"] = "DOCTOR"
+    #     session.save()
+
+    #     data = {
+    #         "patientId": str(self.patient_id),
+    #         "medicines": [{"id": self.medicine1.id, "needed_qty": 2}]
+    #     }
+
+    #     response = self.client.post(f"/prescription/update/{self.prescription.id}", json.dumps(data), content_type="application/json")
+    #     self.assertEqual(response.status_code, 404)
+    #     self.assertEqual(response.json()["message"], "Invalid prescription status to update")
+
+    def test_pay_prescription_method_not_allowed(self):
+        response = self.client.get(f"/prescription/pays/{self.prescription.id}")
+        self.assertEqual(response.status_code, 405)
+
+    # def test_pay_prescription_invalid_format(self):
+    #     response = self.client.post("/prescription/pays/INVALID-ID")
+    #     self.assertEqual(response.status_code, 400)
+    #     self.assertIn("Invalid prescription ID format", response.json()["message"])
+
+    # def test_pay_prescription_not_found(self):
+    #     response = self.client.post("/prescription/pays/PRES-999999")
+    #     self.assertEqual(response.status_code, 404)
+    #     self.assertIn("Prescription not found", response.json()["message"])
+
+    # def test_pay_prescription_not_owned(self):
+    #     self.prescription.status = "FINISHED"
+    #     self.prescription.save()
+
+    #     session = self.client.session
+    #     session["user_data"] = {"id": str(uuid.uuid4())}
+    #     session["user_role"] = "PATIENT"
+    #     session.save()
+
+    #     response = self.client.post(f"/prescription/pays/{self.prescription.id}")
+    #     self.assertEqual(response.status_code, 400)
+    #     self.assertEqual(response.json()["message"], "Cannot pays prescription that not yours")
+
+    def test_update_prescription_method_not_allowed(self):
+        response = self.client.get(f"/prescription/update/{self.prescription.id}")
+        self.assertEqual(response.status_code, 405)
+
+    def test_update_prescription_invalid_json(self):
+        session = self.client.session
+        session["user_data"] = {"id": str(uuid.uuid4())}
+        session["user_role"] = "DOCTOR"
+        session.save()
+
+        response = self.client.post(
+            f"/prescription/update/{self.prescription.id}",
+            "invalid json",
+            content_type="application/json"
+        )
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.json()["message"], "Invalid JSON format")
+
+    def test_update_prescription_not_found(self):
+        session = self.client.session
+        session["user_data"] = {"id": str(uuid.uuid4())}
+        session["user_role"] = "DOCTOR"
+        session.save()
+
+        data = {"patientId": str(uuid.uuid4()), "medicines": []}
+        response = self.client.post(
+            f"/prescription/update/{self.prescription.id}",
+            json.dumps(data),
+            content_type="application/json"
+        )
+        self.assertEqual(response.status_code, 404)
+        self.assertEqual(response.json()["message"], "Prescription not found")
+
+    # def test_update_prescription_wrong_status(self):
+    #     self.prescription.status = "FINISHED"
+    #     self.prescription.save()
+
+    #     session = self.client.session
+    #     session["user_data"] = {"id": str(uuid.uuid4())}
+    #     session["user_role"] = "DOCTOR"
+    #     session.save()
+
+    #     data = {
+    #         "patientId": str(self.patient_id),
+    #         "medicines": [{"id": self.medicine1.id, "needed_qty": 2}]
+    #     }
+    #     response = self.client.post(
+    #         f"/prescription/update/{self.prescription.id}",
+    #         json.dumps(data),
+    #         content_type="application/json"
+    #     )
+    #     print(response.json())
+    #     self.assertEqual(response.status_code, 404)
+    #     self.assertEqual(response.json()["message"], "Invalid prescription status to update")
+
+    def test_update_prescription_invalid_medicine_data(self):
+        self.prescription.status = "CREATED"
+        self.prescription.save()
+
+        session = self.client.session
+        session["user_data"] = {"id": str(uuid.uuid4())}
+        session["user_role"] = "DOCTOR"
+        session.save()
+
+        data = {
+            "patientId": str(self.patient_id),
+            "medicines": [{"id": None, "needed_qty": 0}]
+        }
+
+        response = self.client.post(
+            f"/prescription/update/{self.prescription.id}",
+            json.dumps(data),
+            content_type="application/json"
+        )
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.json()["message"], "Invalid medicine data")
+
+    def test_update_prescription_medicine_not_found(self):
+        self.prescription.status = "CREATED"
+        self.prescription.save()
+
+        session = self.client.session
+        session["user_data"] = {"id": str(uuid.uuid4())}
+        session["user_role"] = "DOCTOR"
+        session.save()
+
+        data = {
+            "patientId": str(self.patient_id),
+            "medicines": [{"id": str(uuid.uuid4()), "needed_qty": 2}]
+        }
+
+        response = self.client.post(
+            f"/prescription/update/{self.prescription.id}",
+            json.dumps(data),
+            content_type="application/json"
+        )
+        self.assertEqual(response.status_code, 404)
+        self.assertTrue(response.json()["message"].startswith("Medicine"))

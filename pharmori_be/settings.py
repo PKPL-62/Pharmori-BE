@@ -10,13 +10,14 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/4.2/ref/settings/
 """
 
+import logging
 from pathlib import Path
 import os
 from dotenv import load_dotenv
 
 import sys
 
-TESTING = "test" in sys.argv 
+TESTING = "test" in sys.argv
 
 # Load environment variables from .env file
 load_dotenv()
@@ -27,7 +28,8 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.getenv("SECRET_KEY")
 
 # Jangan gunakan DEBUG=True di production
-DEBUG = os.getenv("DEBUG", "False") == "True"
+DEBUG = "False"
+AUTH_SERVICE_URL = os.getenv("AUTH_SERVICE_URL")
 
 AUTH_SERVICE_URL = os.getenv("AUTH_SERVICE_URL")
 
@@ -35,27 +37,27 @@ ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "").split(",")
 
 
 # Local
-DATABASES = {
-    'default': {
-        'ENGINE': os.getenv("DATABASE_ENGINE_LOCAL"),
-        'NAME': BASE_DIR / os.getenv("DATABASE_NAME_LOCAL"),
-    }
-}
+# DATABASES = {
+#     'default': {
+#         'ENGINE': os.getenv("DATABASE_ENGINE_LOCAL"),
+#         'NAME': BASE_DIR / os.getenv("DATABASE_NAME_LOCAL"),
+#     }
+# }
 
 
 # Deployment
-# DATABASES = {
-#      'default': {
-#          'ENGINE': 'django.db.backends.{}'.format(
-#              os.getenv('DATABASE_ENGINE', 'sqlite3')
-#          ),
-#          'NAME': os.getenv('DATABASE_NAME', 'polls'),
-#          'USER': os.getenv('DATABASE_USERNAME', 'myprojectuser'),
-#          'PASSWORD': os.getenv('DATABASE_PASSWORD', 'password'),
-#          'HOST': os.getenv('DATABASE_HOST', '127.0.0.1'),
-#          'PORT': os.getenv('DATABASE_PORT', 5432),
-#      }
-#  }
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.{}'.format(
+            os.getenv('DATABASE_ENGINE', 'sqlite3')
+        ),
+        'NAME': os.getenv('DATABASE_NAME', 'polls'),
+        'USER': os.getenv('DATABASE_USERNAME', 'myprojectuser'),
+        'PASSWORD': os.getenv('DATABASE_PASSWORD', 'password'),
+        'HOST': os.getenv('DATABASE_HOST', '127.0.0.1'),
+        'PORT': os.getenv('DATABASE_PORT', 5432),
+    }
+}
 
 # DATABASES = {
 #     'default': {
@@ -75,12 +77,14 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'corsheaders',
     'medicine',
     'prescription',
     'core'
 ]
 
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -92,6 +96,9 @@ MIDDLEWARE = [
     'django_ratelimit.middleware.RatelimitMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
+
+CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOW_CREDENTIALS = True
 
 ROOT_URLCONF = 'pharmori_be.urls'
 
@@ -157,9 +164,7 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 RATELIMIT_VIEW = "pharmori_be.utils.ratelimit_exceeded_view"
 
 # Set logging
-import sys
 
-import logging
 
 if 'test' in sys.argv:
     logging.disable(logging.CRITICAL)

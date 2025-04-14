@@ -8,17 +8,6 @@ from django.utils.timezone import now
 from django_ratelimit.decorators import ratelimit
 from django.core.exceptions import ObjectDoesNotExist
 
-def test(request):
-    response_data = {
-        "status": 200,
-        "success": True,
-        "message": "Successfully retrieved medicine details",
-        "data": {
-            "id": get_test_token("DOCTOR")
-        }
-    }
-    return JsonResponse(response_data, status=200)
-
 @ratelimit(key='ip', rate='5/m', method='GET', block=True)
 def viewall(request):
     allowed_roles = ["PHARMACIST", "DOCTOR"]
@@ -30,7 +19,7 @@ def viewall(request):
     response_data = {
         "status": 200,
         "success": True,
-        "message": "Successfully retrieved active medicines",
+        "message": "Successfully retrievedz active medicines",
         "data": {"medicines": [
             {
                 "id": med.id,
@@ -76,6 +65,7 @@ def detail(request, medicine_id):
     }
     return JsonResponse(response_data, status=200)
 
+@ratelimit(key='ip', rate='3/m', method='POST', block=True)
 @csrf_exempt
 @ratelimit(key='ip', rate='3/m', method='POST', block=True)
 def create(request):
@@ -132,6 +122,7 @@ def create(request):
     except Exception as e:
         return JsonResponse({"status": 500, "success": False, "message": str(e)}, status=500)
 
+@ratelimit(key='ip', rate='3/m', method='POST', block=True)
 @csrf_exempt
 @ratelimit(key='ip', rate='3/m', method='POST', block=True)
 def restock(request):
@@ -178,6 +169,7 @@ def restock(request):
 
     return JsonResponse({"status": 405, "success": False, "message": "Method not allowed"}, status=405)
 
+@ratelimit(key='ip', rate='3/m', method='POST', block=True)
 @csrf_exempt
 @ratelimit(key='ip', rate='3/m', method='POST', block=True)
 def delete(request, medicine_id):
