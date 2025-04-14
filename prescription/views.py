@@ -10,6 +10,7 @@ from django.utils.timezone import now
 from core.utils import validate_user_role
 from django_ratelimit.decorators import ratelimit
 from medicine.models import Medicine
+from pharmori_be import settings
 from prescription.models import MedicineQuantity, Payment, Prescription
 from django.core.exceptions import ObjectDoesNotExist
 
@@ -301,6 +302,9 @@ def pays(request, prescription_id):
     if error_response:
         return error_response
     
+    get_balance_url = f"{settings.AUTH_SERVICE_URL}/balance"
+    withdraw_url = f"{settings.AUTH_SERVICE_URL}/balance/withdraw"
+
     if not isinstance(prescription_id, str) or not prescription_id.startswith("PRES-") or not prescription_id[5:].isdigit():
         return JsonResponse({"status": 400, "success": False, "message": "Invalid prescription ID format"}, status=400)
 

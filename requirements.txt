@@ -9,3 +9,4 @@ pytest-django
 gunicorn==23.0.0
 pip-audit
 safety
+django-cors-headers
