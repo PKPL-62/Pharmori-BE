@@ -191,14 +191,16 @@ def delete(request, prescription_id):
     user_data, user_role, error_response = validate_user_role(request, allowed_roles)
     if error_response:
         return error_response
-
+    logger.info(f"User {user_data['id']} requested to delete prescription {prescription_id}")
     try:
         try:
             prescription = get_object_or_404(Prescription, id=prescription_id, deleted_at__isnull=True)
         except Http404:
+            logger.warning(f"User {user_data['id']} failed to delete prescription {prescription_id} because not found")
             return JsonResponse({"status": 404, "success": False, "message": "Prescription not found"}, status=404)
 
         if prescription.status == "FINISHED" or prescription.status == "PAID":
+            logger.warning(f"User {user_data['id']} failed to delete prescription {prescription_id} because invalid status")
             return JsonResponse({
                 "status": 400,
                 "success": False,
@@ -217,7 +219,7 @@ def delete(request, prescription_id):
             prescription.status = "CANCELLED"
             prescription.deleted_at = timezone.now()
             prescription.save()
-
+        logger.info(f"User {user_data['id']} success to delete prescription {prescription_id}")
         return JsonResponse({
             "status": 200,
             "success": True,
