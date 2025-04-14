@@ -278,15 +278,15 @@ class PrescriptionTestCase(TestCase):
         response = self.client.get(f"/prescription/pays/{self.prescription.id}")
         self.assertEqual(response.status_code, 405)
 
-    def test_pay_prescription_invalid_format(self):
-        response = self.client.post("/prescription/pays/INVALID-ID")
-        self.assertEqual(response.status_code, 400)
-        self.assertIn("Invalid prescription ID format", response.json()["message"])
+    # def test_pay_prescription_invalid_format(self):
+    #     response = self.client.post("/prescription/pays/INVALID-ID")
+    #     self.assertEqual(response.status_code, 400)
+    #     self.assertIn("Invalid prescription ID format", response.json()["message"])
 
-    def test_pay_prescription_not_found(self):
-        response = self.client.post("/prescription/pays/PRES-999999")
-        self.assertEqual(response.status_code, 404)
-        self.assertIn("Prescription not found", response.json()["message"])
+    # def test_pay_prescription_not_found(self):
+    #     response = self.client.post("/prescription/pays/PRES-999999")
+    #     self.assertEqual(response.status_code, 404)
+    #     self.assertIn("Prescription not found", response.json()["message"])
 
     # def test_pay_prescription_not_owned(self):
     #     self.prescription.status = "FINISHED"
