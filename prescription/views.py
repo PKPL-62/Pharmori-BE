@@ -7,6 +7,7 @@ from django.shortcuts import get_object_or_404
 from django.db import transaction
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.timezone import now
+import requests
 from core.utils import validate_user_role
 from django_ratelimit.decorators import ratelimit
 from medicine.models import Medicine
@@ -302,8 +303,14 @@ def pays(request, prescription_id):
     if error_response:
         return error_response
     
-    get_balance_url = f"{settings.AUTH_SERVICE_URL}/balance"
-    withdraw_url = f"{settings.AUTH_SERVICE_URL}/balance/withdraw"
+    auth_header = request.headers.get("Authorization")
+    if not auth_header or not auth_header.startswith("Bearer "):
+        return JsonResponse({"status": 401, "success": False, "message": "Authorization token missing or invalid"}, status=401)
+    
+    token = auth_header.split(" ")[1]
+
+    get_balance_url = f"{settings.AUTH_SERVICE_URL}/api/balances"
+    withdraw_url = f"{settings.AUTH_SERVICE_URL}/api/balances/withdraw"
 
     if not isinstance(prescription_id, str) or not prescription_id.startswith("PRES-") or not prescription_id[5:].isdigit():
         return JsonResponse({"status": 400, "success": False, "message": "Invalid prescription ID format"}, status=400)
@@ -315,9 +322,33 @@ def pays(request, prescription_id):
     
     if str(prescription.patient_id) != str(user_data["id"]):
         return JsonResponse({"status": 400, "success": False, "message": "Cannot pays prescription that not yours"}, status=400)
-
+    if prescription.status == "PAID":
+        return JsonResponse({"status": 400, "success": False, "message": "Cannot pays prescription that are paid already"}, status=400)
     if prescription.status != "FINISHED":
         return JsonResponse({"status": 400, "success": False, "message": "Cannot pays prescription that are not finished yet"}, status=400)
+
+    try:
+        balance_response = requests.get(get_balance_url, headers={"Authorization": f"Bearer {token}"})
+        if balance_response.status_code != 200:
+            return JsonResponse({"status": 400, "success": False, "message": "Failed to fetch Opay balance from auth service"}, status=400)
+        balance_data = balance_response.json().get("data", {})
+        current_balance = balance_data.get("balance", 0)
+    except Exception as e:
+        return JsonResponse({"status": 500, "success": False, "message": "Error contacting auth service", "details": str(e)}, status=500)
+
+    if current_balance < prescription.total_price:
+        return JsonResponse({"status": 400, "success": False, "message": "Insufficient Opay balance"}, status=400)
+
+    try:
+        withdraw_response = requests.patch(
+            withdraw_url,
+            json={"amount": prescription.total_price},
+            headers={"Authorization": f"Bearer {token}"}
+        )
+        if withdraw_response.status_code != 200:
+            return JsonResponse({"status": 400, "success": False, "message": "Withdrawal failed", "details": withdraw_response.json()}, status=400)
+    except Exception as e:
+        return JsonResponse({"status": 500, "success": False, "message": "Error during withdrawal", "details": str(e)}, status=500)
 
     payment = Payment.objects.create(
         prescription=prescription,
@@ -334,7 +365,7 @@ def pays(request, prescription_id):
         "success": True,
         "message": "Prescription paid successfully.",
         "data": {
-            "payment": payment
+            "total_price": payment.total_price
         }
     }, status=200)
 
