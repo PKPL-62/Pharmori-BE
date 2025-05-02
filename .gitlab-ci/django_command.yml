@@ -1,0 +1,34 @@
+# GitLab CI/CD Pipeline for Django Command Execution
+# This pipeline allows executing arbitrary Django management commands through CI/CD
+# 
+# USAGE:
+# - Set DJANGO_COMMAND to the Django management command you want to run (e.g., migrate, makemigrations)
+# - Optionally set DJANGO_COMMAND_PARAMS for any command parameters
+django_command_execution:
+  variables:
+    PYTHONUNBUFFERED: "1" # Ensures Python output is sent straight to terminal without buffering
+  stage: execute
+  image: python:3.13-slim
+  
+  # Only run this job when DJANGO_COMMAND is provided
+  rules:
+    - if: $DJANGO_COMMAND
+      when: always
+    - when: never
+  
+  before_script:
+    # Install Python dependencies
+    - pip install -r requirements.txt
+  
+  script:
+    # Construct and execute the Django command with proper escaping
+    - |
+      if [ -n "$DJANGO_COMMAND_PARAMS" ]; then
+        # Use eval to properly handle complex command parameters with spaces
+        echo "Executing: python manage.py $DJANGO_COMMAND $DJANGO_COMMAND_PARAMS"
+        eval "python manage.py $DJANGO_COMMAND $DJANGO_COMMAND_PARAMS --noinput"
+      else
+        echo "Executing: python manage.py $DJANGO_COMMAND"
+        eval "python manage.py $DJANGO_COMMAND --noinput"
+      fi
+    - echo "Django command execution completed"

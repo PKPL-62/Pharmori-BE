@@ -1,0 +1,24 @@
+build_image:
+  stage: build
+  image: 
+    name: gcr.io/kaniko-project/executor:debug
+    entrypoint: [""]
+  script:
+    - echo "Building and Pushing Docker image $TAG_IMAGE_NAME with Kaniko..."
+    - |
+      cat << EOF > /kaniko/.docker/config.json
+      {
+        "auths": {
+          "$registry_host": {
+            "auth": "$(echo -n $registry_username:$registry_password | base64 -w0)"
+          }
+        }
+      }
+      EOF
+    - /kaniko/executor
+      --context "${CI_PROJECT_DIR}"
+      --dockerfile "${CI_PROJECT_DIR}/Dockerfile"
+      --verbosity=info
+      --destination "${TAG_IMAGE_NAME}"
+  only:
+    - tags

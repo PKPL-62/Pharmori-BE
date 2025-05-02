@@ -1,0 +1,20 @@
+include:
+  - local: '.gitlab-ci/variables.yml'
+  - local: '.gitlab-ci/build.yml'
+  - local: '.gitlab-ci/deploy.yml'
+  - local: '.gitlab-ci/execute_sql.yml'
+  - local: '.gitlab-ci/django_command.yml'
+
+stages:
+  - build
+  - deploy
+  - execute
+
+# Global default settings
+default:
+  interruptible: true
+  retry:
+    max: 2
+    when:
+      - runner_system_failure
+      - stuck_or_timeout_failure
