@@ -67,6 +67,7 @@ def detail(request, medicine_id):
 
 @ratelimit(key='ip', rate='3/m', method='POST', block=True)
 @csrf_exempt
+@ratelimit(key='ip', rate='3/m', method='POST', block=True)
 def create(request):
     if request.method != "POST":
         return JsonResponse({"status": 405, "success": False, "message": "Method Not Allowed"}, status=405)
@@ -123,6 +124,7 @@ def create(request):
 
 @ratelimit(key='ip', rate='3/m', method='POST', block=True)
 @csrf_exempt
+@ratelimit(key='ip', rate='3/m', method='POST', block=True)
 def restock(request):
     if request.method == "POST":
 
@@ -169,6 +171,7 @@ def restock(request):
 
 @ratelimit(key='ip', rate='3/m', method='POST', block=True)
 @csrf_exempt
+@ratelimit(key='ip', rate='3/m', method='POST', block=True)
 def delete(request, medicine_id):
     if request.method == "POST":
         allowed_roles = ["PHARMACIST", "DOCTOR"]

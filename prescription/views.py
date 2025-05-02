@@ -107,6 +107,7 @@ def detail(request, prescription_id):
 
 @ratelimit(key="ip", rate="3/m", method="POST", block=True)
 @csrf_exempt
+@ratelimit(key="ip", rate="3/m", method="POST", block=True)
 def create(request):
     if request.method != "POST":
         return JsonResponse({"status": 405, "success": False, "message": "Method not allowed"}, status=405)

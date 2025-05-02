@@ -31,6 +31,7 @@ SECRET_KEY = os.getenv("SECRET_KEY")
 DEBUG = "False"
 AUTH_SERVICE_URL = os.getenv("AUTH_SERVICE_URL")
 
+
 ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "").split(",")
 
 
