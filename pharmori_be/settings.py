@@ -25,14 +25,14 @@ load_dotenv()
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # Gunakan variabel dari .env
-SECRET_KEY = os.getenv("SECRET_KEY")
+SECRET_KEY = os.getenv("PODS_SECRET_KEY")
 
 # Jangan gunakan DEBUG=True di production
-DEBUG = "False"
-AUTH_SERVICE_URL = os.getenv("AUTH_SERVICE_URL")
+DEBUG = os.getenv("PODS_DEBUG", "False") == "True"
+AUTH_SERVICE_URL = os.getenv("PODS_AUTH_SERVICE_URL")
 
 
-ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "").split(",")
+ALLOWED_HOSTS = os.getenv("PODS_ALLOWED_HOSTS", "").split(",")
 
 
 # Local
@@ -43,18 +43,23 @@ ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "").split(",")
 #     }
 # }
 
+DB_SCHEMA = os.getenv("PODS_DB_SCHEMA", "public")
 
 # Deployment
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.{}'.format(
-            os.getenv('DATABASE_ENGINE', 'sqlite3')
+            os.getenv('PODS_DATABASE_ENGINE', 'sqlite3')
         ),
-        'NAME': os.getenv('DATABASE_NAME', 'polls'),
-        'USER': os.getenv('DATABASE_USERNAME', 'myprojectuser'),
-        'PASSWORD': os.getenv('DATABASE_PASSWORD', 'password'),
-        'HOST': os.getenv('DATABASE_HOST', '127.0.0.1'),
-        'PORT': os.getenv('DATABASE_PORT', 5432),
+        'NAME': os.getenv('DB_NAME', 'polls'),
+        'USER': os.getenv('DB_USERNAME', 'myprojectuser'),
+        'PASSWORD': os.getenv('DB_PASSWORD', 'password'),
+        'HOST': os.getenv('DB_HOST', '127.0.0.1'),
+        'PORT': os.getenv('DB_PORT', 5432),
+        'OPTIONS': {
+            'options': f'-c search_path={DB_SCHEMA}',
+        },
+        
     }
 }
 
