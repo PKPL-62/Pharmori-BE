@@ -1,5 +1,5 @@
 # Use the official Python runtime image
-FROM http://registry.cs.ui.ac.id/pkpl/base/python:3.13-alpine  
+FROM registry.cs.ui.ac.id/pkpl/base/python:3.13-alpine  
 
 # Create the app directory
 RUN mkdir /app
