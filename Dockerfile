@@ -28,5 +28,10 @@ COPY . /app/
 # Expose the Django port
 EXPOSE 8000
 
-# Run migrations, tests, and start the server
-CMD ["sh", "-c", "python manage.py migrate && python manage.py runserver 0.0.0.0:8000"]
+# Create a non-root user for security
+RUN adduser --disabled-password --gecos "" appuser
+RUN chown -R appuser:appuser /app
+USER appuser
+
+# Run migrations and start Gunicorn
+CMD ["sh", "-c", "python manage.py migrate && gunicorn --bind 0.0.0.0:8000 --workers 3 your_project_name.wsgi:application"]
