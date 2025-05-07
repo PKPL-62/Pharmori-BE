@@ -34,4 +34,4 @@ RUN chown -R appuser:appuser /app
 USER appuser
 
 # Run migrations and start Gunicorn
-CMD ["sh", "-c", "python manage.py migrate && gunicorn --bind 0.0.0.0:8000 --workers 3 your_project_name.wsgi:application"]
+CMD ["sh", "-c", "python manage.py migrate && gunicorn --bind 0.0.0.0:8000 --workers 3 pharmori_be.wsgi:application"]
