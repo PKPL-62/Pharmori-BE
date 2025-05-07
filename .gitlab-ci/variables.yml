@@ -2,8 +2,8 @@ variables:
   # App Specifications
   MIN_CPU: 150m
   MIN_MEMORY: 200Mi
-  MAX_CPU: 350m
-  MAX_MEMORY: 400Mi
+  MAX_CPU: 300m
+  MAX_MEMORY: 300Mi
   PORT: 8000
   PROXY_BODY_SIZE: 5m #5 Megabyte
 
