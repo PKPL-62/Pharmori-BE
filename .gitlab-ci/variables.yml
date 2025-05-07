@@ -1,7 +1,7 @@
 variables:
   # App Specifications
   MIN_CPU: 100m
-  MIN_MEMORY: 205Mi
+  MIN_MEMORY: 200Mi
   MAX_CPU: 250m
   MAX_MEMORY: 256Mi
   PORT: 8000
