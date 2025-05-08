@@ -1,6 +1,6 @@
 variables:
   # App Specifications
-  MIN_CPU: 100m
+  MIN_CPU: 75m
   MIN_MEMORY: 200Mi
   MAX_CPU: 250m
   MAX_MEMORY: 256Mi
