@@ -34,6 +34,9 @@ AUTH_SERVICE_URL = os.getenv("PODS_AUTH_SERVICE_URL")
 
 ALLOWED_HOSTS = os.getenv("PODS_ALLOWED_HOSTS", "").split(",")
 
+print("Allowed hosts:", ALLOWED_HOSTS)
+print("Debug mode:", DEBUG)
+print("Auth service URL:", AUTH_SERVICE_URL)
 
 # Local
 # DATABASES = {
