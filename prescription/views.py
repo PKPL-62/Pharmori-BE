@@ -20,10 +20,14 @@ logger = logging.getLogger('django.request')
 
 @ratelimit(key="ip", rate="5/m", method="GET", block=True)
 def viewall(request):
+    print('viewall here.')
+
     allowed_roles = ["PHARMACIST", "DOCTOR", "PATIENT"]
     user_data, user_role, error_response = validate_user_role(request, allowed_roles)
     if error_response:
         return error_response
+    
+    print('after authorization')
         
     prescriptions = Prescription.objects.filter(deleted_at__isnull=True)
 
