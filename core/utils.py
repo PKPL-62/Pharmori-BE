@@ -6,8 +6,8 @@ import logging
 import os
 logger = logging.getLogger('django.request')
 
-AUTH_VALIDATION_URL = f"{settings.AUTH_SERVICE_URL}/api/auth/validate"
-AUTH_LOGIN_URL = f"{settings.AUTH_SERVICE_URL}/api/auth/login"
+AUTH_VALIDATION_URL = f"{settings.AUTH_SERVICE_URL}/auth/validate"
+AUTH_LOGIN_URL = f"{settings.AUTH_SERVICE_URL}/auth/login"
 
 def validate_user_role(request, allowed_roles):
     
